@@ -126,8 +126,10 @@ class FocalLoss(nn.Module):
         self.ignore_index = ignore_index
 
     def forward(self, logits, target):
-        # standard CE then focal modulation
-        ce = F.cross_entropy(logits, target, reduction="none", ignore_index=self.ignore_index)
+        if self.ignore_index is None:
+            ce = F.cross_entropy(logits, target, reduction="none")
+        else:
+            ce = F.cross_entropy(logits, target, reduction="none", ignore_index=self.ignore_index)
         pt = torch.exp(-ce)
         focal = self.alpha * (1 - pt) ** self.gamma * ce
         if self.ignore_index is not None:
@@ -164,18 +166,20 @@ class TverskyLoss(nn.Module):
         return 1 - tversky.mean()
 
 
+def _ce_loss(ignore_index):
+    return nn.CrossEntropyLoss() if ignore_index is None else nn.CrossEntropyLoss(ignore_index=ignore_index)
+
 def make_loss(name: str, num_classes: int, ignore_index: int = None):
     name = name.lower()
     if name in ["cce", "ce", "crossentropy", "cross-entropy"]:
-        return nn.CrossEntropyLoss(ignore_index=ignore_index)
+        return _ce_loss(ignore_index)
     if name == "dice":
         return DiceLoss(num_classes=num_classes, ignore_index=ignore_index)
     if name == "focal":
         return FocalLoss(ignore_index=ignore_index)
     if name in ["dice+ce", "dice_ce", "combo"]:
-        # typical weights; tweak if you like
         return ComboLoss(
-            nn.CrossEntropyLoss(ignore_index=ignore_index),
+            _ce_loss(ignore_index),
             DiceLoss(num_classes=num_classes, ignore_index=ignore_index),
             w_ce=0.5, w_dice=0.5
         )
