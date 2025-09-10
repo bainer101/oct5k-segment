@@ -4,7 +4,8 @@ from .backbone import (
     resnet,
     mobilenetv2,
     hrnetv2,
-    xception
+    xception,
+    oct_f
 )
 
 def _segm_hrnet(name, backbone_name, num_classes, pretrained_backbone):
@@ -109,6 +110,35 @@ def _segm_mobilenet(name, backbone_name, num_classes, output_stride, pretrained_
     model = DeepLabV3(backbone, classifier)
     return model
 
+def _segm_octf(name, num_classes, output_stride, pretrained_backbone):
+    # match ASPP dilation to output_stride (same pattern as others)
+    if output_stride == 8:
+        aspp_dilate = [12, 24, 36]
+    else:
+        aspp_dilate = [6, 12, 18]
+
+    # Your OCT-F encoder-only backbone.
+    # NOTE: your training script already repeats 1ch->3ch via ChannelAdapter,
+    # so OCTFBackbone can be instantiated with its default in_channels=1 or 3.
+    backbone = oct_f.OCTFBackbone(in_channels=1, output_stride=output_stride)
+
+    # OCTFBackbone.forward() returns {"out": C=256, "low_level": C=64} by design.
+    inplanes = 256
+    low_level_planes = 64
+
+    if name == 'deeplabv3plus':
+        classifier = DeepLabHeadV3Plus(inplanes, low_level_planes, num_classes, aspp_dilate)
+        # backbone already returns dict(out=..., low_level=...), so no IntermediateLayerGetter needed
+        model = DeepLabV3(backbone, classifier)
+    elif name == 'deeplabv3':
+        classifier = DeepLabHead(inplanes, num_classes, aspp_dilate)
+        model = DeepLabV3(backbone, classifier)
+    else:
+        raise NotImplementedError
+
+    return model
+
+
 def _load_model(arch_type, backbone, num_classes, output_stride, pretrained_backbone):
 
     if backbone=='mobilenetv2':
@@ -119,6 +149,8 @@ def _load_model(arch_type, backbone, num_classes, output_stride, pretrained_back
         model = _segm_hrnet(arch_type, backbone, num_classes, pretrained_backbone=pretrained_backbone)
     elif backbone=='xception':
         model = _segm_xception(arch_type, backbone, num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
+    elif backbone == 'octf':
+        model = _segm_octf(arch_type, num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
     else:
         raise NotImplementedError
     return model
@@ -171,6 +203,16 @@ def deeplabv3_xception(num_classes=21, output_stride=8, pretrained_backbone=True
     """
     return _load_model('deeplabv3', 'xception', num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
 
+def deeplabv3_octf(num_classes=6, output_stride=16, pretrained_backbone=False):
+    """Constructs a DeepLabV3+ model with an OCT-F backbone.
+
+    Args:
+        num_classes (int): number of classes.
+        output_stride (int): output stride for deeplab.
+        pretrained_backbone (bool): If True, use the pretrained backbone.
+    """
+    return _load_model('deeplabv3', 'octf', num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
+
 
 # Deeplab v3+
 def deeplabv3plus_hrnetv2_48(num_classes=21, output_stride=4, pretrained_backbone=False): # no pretrained backbone yet
@@ -220,3 +262,13 @@ def deeplabv3plus_xception(num_classes=21, output_stride=8, pretrained_backbone=
         pretrained_backbone (bool): If True, use the pretrained backbone.
     """
     return _load_model('deeplabv3plus', 'xception', num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
+
+def deeplabv3plus_octf(num_classes=6, output_stride=16, pretrained_backbone=False):
+    """Constructs a DeepLabV3+ model with an OCT-F backbone.
+
+    Args:
+        num_classes (int): number of classes.
+        output_stride (int): output stride for deeplab.
+        pretrained_backbone (bool): If True, use the pretrained backbone.
+    """
+    return _load_model('deeplabv3plus', 'octf', num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
