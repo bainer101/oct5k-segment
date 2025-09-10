@@ -102,6 +102,10 @@ class _DilatedRefine(nn.Module):
         return self.relu(y + identity)
 
 
+_PREFIX_RE = re.compile(r'^(?:base_model\.|model\.|module\.)?(?P<rest>.+)$')
+_BLOCK_RE  = re.compile(r'^blocks\.(?P<idx>[0-3])\.(?P<rest>.+)$')
+
+
 @torch.no_grad()
 def load_octf_backbone_from_checkpoint(backbone: OCTFBackbone,
                                        checkpoint_path: str,
@@ -127,28 +131,28 @@ def load_octf_backbone_from_checkpoint(backbone: OCTFBackbone,
 
     # Build a remapped copy
     remapped = {}
-    pat = re.compile(r"^blocks\.(?P<idx>[0-3])\.(?P<rest>.+)$")
+
     for k, v in state.items():
-        m = pat.match(k)
+        m = _PREFIX_RE.match(k)
         if not m:
             continue
-        idx = int(m.group("idx"))
-        rest = m.group("rest")
+        k2 = m.group("rest")
 
-        # layer name in this backbone
-        layer_name = f"layer{idx+1}"
+        m2 = _BLOCK_RE.match(k2)
+        if m2:
+            idx = int(m2.group("idx"))
+            rest = m2.group("rest")
+            layer_name = f"layer{idx+1}"
+            # If OS=8, we only load layer1..3 strictly; layer4 is a different module
+            if backbone.output_stride == 8 and layer_name == "layer4":
+                # skip: layer4 here is a dilated refine block, not the original EncoderBlockV1
+                continue
 
-        # If OS=8, we only load layer1..3 strictly; layer4 is a different module
-        if backbone.output_stride == 8 and layer_name == "layer4":
-            # skip: layer4 here is a dilated refine block, not the original EncoderBlockV1
+            new_key = f"{layer_name}.{rest}"
+            if new_key in own and own[new_key].shape == v.shape:
+                remapped[new_key] = v
             continue
 
-        new_key = f"{layer_name}.{rest}"
-        if new_key in own and own[new_key].shape == v.shape:
-            remapped[new_key] = v
-
-    # also try to load input_adapter if checkpoint was trained in grayscale (rare)
-    for k, v in state.items():
         if k.startswith("input_adapter.") and k in own and own[k].shape == v.shape:
             remapped[k] = v
 
