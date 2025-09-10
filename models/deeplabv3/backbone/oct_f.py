@@ -3,7 +3,7 @@ import re
 import torch
 import torch.nn as nn
 from typing import Dict
-from core_blocks_V2 import EncoderBlockV1  # your residual downsampling block
+from .core_blocks_V2 import EncoderBlockV1  # your residual downsampling block
 
 __all__ = ["OCTFBackbone", "load_octf_backbone_from_checkpoint"]
 
