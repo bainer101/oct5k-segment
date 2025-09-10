@@ -488,7 +488,7 @@ def parse_args():
         help="Shortcut for --models unet deeplabv3 deeplabv3plus"
     )
 
-    p.add_argument("--backbones", type=str, nargs="*", default=["resnet50", "resnet101", "mobilenetv2", "xception"],
+    p.add_argument("--backbones", type=str, nargs="*", default=["resnet50", "resnet101", "mobilenetv2", "xception", "octf"],
                    help="Backbones to try (ignored for UNet)")
     p.add_argument("--losses", type=str, nargs="*", default=["cce", "dice", "focal", "dice+ce"],
                    help="Which loss functions to compare")
