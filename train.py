@@ -32,8 +32,7 @@ from models.deeplabv3 import (
     deeplabv3plus_resnet101,
     deeplabv3plus_mobilenet,
     deeplabv3plus_xception,
-    deeplabv3plus_octf,
-    load_octf_backbone_from_checkpoint
+    deeplabv3plus_octf
 )
 
 # ---------------------------
@@ -263,8 +262,7 @@ def build_model(model_name: str, backbone: str, in_channels: int, num_classes: i
         elif backbone == "xception":
             core = deeplabv3_xception(num_classes=num_classes, output_stride=8, pretrained_backbone=True)
         elif backbone == "octf":
-            core = deeplabv3_octf(num_classes=num_classes, output_stride=16, pretrained_backbone=False)
-            core = load_octf_backbone_from_checkpoint(core, "model_epoch_5_loss_0.9413.pth")
+            core = deeplabv3_octf(num_classes=num_classes, output_stride=16, pretrained_backbone=True)
             
         else:
             raise ValueError(f"Unsupported backbone for deeplabv3: {backbone}")
@@ -278,8 +276,7 @@ def build_model(model_name: str, backbone: str, in_channels: int, num_classes: i
         elif backbone == "xception":
             core = deeplabv3plus_xception(num_classes=num_classes, output_stride=8, pretrained_backbone=True)
         elif backbone == "octf":
-            core = deeplabv3plus_octf(num_classes=num_classes, output_stride=16, pretrained_backbone=False)
-            core = load_octf_backbone_from_checkpoint(core, "model_epoch_5_loss_0.9413.pth")
+            core = deeplabv3plus_octf(num_classes=num_classes, output_stride=16, pretrained_backbone=True)
         else:
             raise ValueError(f"Unsupported backbone for deeplabv3plus: {backbone}")
     else:

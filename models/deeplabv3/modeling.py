@@ -122,6 +122,9 @@ def _segm_octf(name, num_classes, output_stride, pretrained_backbone):
     # so OCTFBackbone can be instantiated with its default in_channels=1 or 3.
     backbone = oct_f.OCTFBackbone(in_channels=1, output_stride=output_stride)
 
+    if pretrained_backbone:
+        backbone = oct_f.load_octf_backbone_from_checkpoint(backbone, "/mnt/scratch2/users/40259321/oct-segment/model_epoch_5_loss_0.9413.pth")
+
     # OCTFBackbone.forward() returns {"out": C=256, "low_level": C=64} by design.
     inplanes = 256
     low_level_planes = 64
@@ -203,7 +206,7 @@ def deeplabv3_xception(num_classes=21, output_stride=8, pretrained_backbone=True
     """
     return _load_model('deeplabv3', 'xception', num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
 
-def deeplabv3_octf(num_classes=6, output_stride=16, pretrained_backbone=False):
+def deeplabv3_octf(num_classes=6, output_stride=16, pretrained_backbone=True):
     """Constructs a DeepLabV3+ model with an OCT-F backbone.
 
     Args:
@@ -263,7 +266,7 @@ def deeplabv3plus_xception(num_classes=21, output_stride=8, pretrained_backbone=
     """
     return _load_model('deeplabv3plus', 'xception', num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
 
-def deeplabv3plus_octf(num_classes=6, output_stride=16, pretrained_backbone=False):
+def deeplabv3plus_octf(num_classes=6, output_stride=16, pretrained_backbone=True):
     """Constructs a DeepLabV3+ model with an OCT-F backbone.
 
     Args:
