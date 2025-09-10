@@ -263,6 +263,8 @@ def build_model(model_name: str, backbone: str, in_channels: int, num_classes: i
             core = deeplabv3_xception(num_classes=num_classes, output_stride=8, pretrained_backbone=True)
         elif backbone == "octf":
             core = deeplabv3_octf(num_classes=num_classes, output_stride=16, pretrained_backbone=True)
+            model = core
+            return model
             
         else:
             raise ValueError(f"Unsupported backbone for deeplabv3: {backbone}")
@@ -277,6 +279,8 @@ def build_model(model_name: str, backbone: str, in_channels: int, num_classes: i
             core = deeplabv3plus_xception(num_classes=num_classes, output_stride=8, pretrained_backbone=True)
         elif backbone == "octf":
             core = deeplabv3plus_octf(num_classes=num_classes, output_stride=16, pretrained_backbone=True)
+            model = core
+            return model
         else:
             raise ValueError(f"Unsupported backbone for deeplabv3plus: {backbone}")
     else:
